@@ -26,7 +26,7 @@ public class JsonJavaType extends AbstractClassJavaType<Object> {
 
 	private Type propertyType;
 	private Class propertyClass;
-	private static List<Class> validatedTypes = new ArrayList<>();
+	private List<Class> validatedTypes = new ArrayList<>();
 
 
 	protected JsonJavaType() {
