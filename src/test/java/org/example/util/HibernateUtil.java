@@ -15,10 +15,8 @@ public class HibernateUtil {
 
 	public static SessionFactory setUp(String jdbcUrl, String username, String password, Class<?>... classes) {
 		Properties props = new Properties();
-		//change db if you want
 		props.put("hibernate.connection.url", jdbcUrl);
 		props.put("hibernate.connection.username", username);
-		//put webui stg password
 		props.put("hibernate.connection.password", password);
 		props.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
 		props.put("javax.persistence.jdbc.driver", "com.mysql.jdbc.Driver");
