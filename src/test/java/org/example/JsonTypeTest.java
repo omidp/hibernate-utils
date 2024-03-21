@@ -7,6 +7,7 @@ import org.example.util.HibernateUtil;
 import org.hibernate.SessionFactory;
 import org.junit.ClassRule;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -38,6 +39,11 @@ public class JsonTypeTest {
 	@BeforeEach
 	public void setUp() {
 		sessionFactory = HibernateUtil.setUp(MY_SQL_CONTAINER.getJdbcUrl(), MY_SQL_CONTAINER.getUsername(), MY_SQL_CONTAINER.getUsername(), BookEntity.class);
+	}
+
+	@AfterEach
+	public void tearDown(){
+		sessionFactory.close();
 	}
 
 	@AfterAll

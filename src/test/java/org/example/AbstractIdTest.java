@@ -8,6 +8,7 @@ import org.example.util.HibernateUtil;
 import org.hibernate.SessionFactory;
 import org.junit.ClassRule;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -47,6 +48,11 @@ public class AbstractIdTest {
 				ADD INDEX `Índice 1` (`id`);
 				""").executeUpdate();
 		}));
+	}
+
+	@AfterEach
+	public void tearDown(){
+		sessionFactory.close();
 	}
 
 	@AfterAll
