@@ -61,7 +61,7 @@ public class ManualIdTest {
 
 	@Test
 	void testManualAssignIdLong() {
-		sessionFactory.inTransaction(session -> session.persist(new MerchantEntity(1, "m1")));
+		sessionFactory.inTransaction(session -> session.persist(new MerchantEntity(UUID.randomUUID(), "m1")));
 	}
 
 

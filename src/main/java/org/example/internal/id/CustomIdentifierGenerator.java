@@ -8,6 +8,7 @@ import org.hibernate.generator.OnExecutionGenerator;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.id.PostInsertIdentityPersister;
+import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.id.factory.spi.CustomIdGeneratorCreationContext;
 import org.hibernate.id.factory.spi.StandardGenerator;
 import org.hibernate.id.insert.InsertGeneratedIdentifierDelegate;
@@ -23,6 +24,7 @@ public class CustomIdentifierGenerator implements IdentifierGenerator, OnExecuti
 	private IdentityGenerator identityGenerator;
 	private boolean generatedOnExecution = true;
 	private String entityName;
+	private SequenceStyleGenerator sequenceStyleGenerator;
 
 	public CustomIdentifierGenerator(CustomIdGenerator config, Member member,
 									 CustomIdGeneratorCreationContext context) {
@@ -33,6 +35,8 @@ public class CustomIdentifierGenerator implements IdentifierGenerator, OnExecuti
 			valueTransformer = UUIDJavaType.PassThroughTransformer.INSTANCE;
 			this.generatedOnExecution = false;
 		}
+		this.sequenceStyleGenerator = new SequenceStyleGenerator();
+//		this.sequenceStyleGenerator.configure();
 	}
 
 
@@ -75,4 +79,8 @@ public class CustomIdentifierGenerator implements IdentifierGenerator, OnExecuti
 		return generatedOnExecution;
 	}
 
+	@Override
+	public boolean allowAssignedIdentifiers() {
+		return true;
+	}
 }

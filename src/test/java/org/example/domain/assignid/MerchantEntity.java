@@ -6,6 +6,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.example.internal.id.CustomIdGenerator;
+
+import java.util.UUID;
 
 @Table(name = "merchants")
 @Entity
@@ -14,8 +17,8 @@ import lombok.NoArgsConstructor;
 public class MerchantEntity {
 
 	@Id
-	@GeneratedValue
-	private Integer id;
+	@CustomIdGenerator
+	private UUID id;
 
 	private String name;
 
