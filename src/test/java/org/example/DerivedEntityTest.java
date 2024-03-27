@@ -101,7 +101,7 @@ public class DerivedEntityTest {
 	}
 
 	@Test
-	void testDerivedJoin() {
+	void testDerivedJoinNative() {
 		sessionFactory.inTransaction(session -> {
 			session.createNativeQuery("""				
 				select
@@ -115,22 +115,40 @@ public class DerivedEntityTest {
 				        left join (select per.name as owner_name, per.id from PersonEntity per) as p on phone.person_id = p.id        							
 				""").getResultList();
 		});
-		//Hql
+	}
+
+	@Test
+	void testDerivedJoinLateral() {
 		sessionFactory.inTransaction(session -> {
-			List<Tuple> calls = session.createQuery(
-					"""      					
-						  select person.owner_name, c.payment is not null
+			session.createQuery(
+					"""						  
+						select person.owner_name, c.payment is not null
 						  from CallEntity c
 						  left join c.phone ph
-						  left join (
-						  		select p.name as owner_name from PersonEntity p where ph.personId = p.id
-						   ) as person
-						 
-						  """,
-					Tuple.class)
-
+						  left join lateral (
+						      select p.name as owner_name from PersonEntity p where ph.personId = p.id
+						  ) as person
+						  """)
 				.getResultList();
 		});
+
+	}
+
+	@Test
+	void testDerivedJoinNoLateral() {
+		sessionFactory.inTransaction(session -> {
+			session.createQuery(
+					"""						  
+						select person.owner_name, c.payment is not null
+						  from CallEntity c
+						  left join c.phone ph
+						  left join  (
+						      select p.name as owner_name from PersonEntity p where ph.personId = p.id
+						  ) as person
+						  """)
+				.getResultList();
+		});
+
 	}
 
 
