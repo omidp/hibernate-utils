@@ -91,6 +91,7 @@ public class MultipleCteEntityTest {
 	}
 
 	//This is where Hibernate fails
+	//https://stackoverflow.com/questions/76351608/joining-ctes-in-hibernate-6-2
 	@Test
 	void testMultipleCte() {
 		sessionFactory.inTransaction(session -> {
