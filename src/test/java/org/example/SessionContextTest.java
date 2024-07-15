@@ -66,7 +66,7 @@ public class SessionContextTest {
 		sessionFactory.inTransaction(session -> {
 			session.persist(new OrderEntity(UUID.randomUUID(), "test"));
 			if(!ManagedSessionContext.hasBind(sessionFactory)){
-				ManagedSessionContext.bind(session);
+				ManagedSessionContext.bind(sessionFactory.openSession());
 			}
 			insertItem();
 			ManagedSessionContext.unbind(sessionFactory);
