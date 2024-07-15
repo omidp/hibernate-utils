@@ -13,7 +13,15 @@ import java.util.Properties;
 
 public class HibernateUtil {
 
+	public interface customizeProp {
+		void doWithProps(Properties properties);
+	}
+
 	public static SessionFactory setUp(String jdbcUrl, String username, String password, Class<?>... classes) {
+		return setUp(jdbcUrl, username, password, null, classes);
+	}
+
+	public static SessionFactory setUp(String jdbcUrl, String username, String password, customizeProp customizeProp, Class<?>... classes) {
 		Properties props = new Properties();
 		props.put("hibernate.connection.url", jdbcUrl);
 		props.put("hibernate.connection.username", username);
@@ -28,6 +36,7 @@ public class HibernateUtil {
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		objectMapper.configure(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE, false);
 		props.put(AvailableSettings.JSON_FORMAT_MAPPER, new CustomJacksonJsonFormatMapper(objectMapper));
+		customizeProp.doWithProps(props);
 		final StandardServiceRegistry registry =
 			new StandardServiceRegistryBuilder()
 				.applySettings(props)
