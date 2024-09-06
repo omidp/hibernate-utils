@@ -36,7 +36,9 @@ public class HibernateUtil {
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		objectMapper.configure(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE, false);
 		props.put(AvailableSettings.JSON_FORMAT_MAPPER, new CustomJacksonJsonFormatMapper(objectMapper));
-		customizeProp.doWithProps(props);
+		if(customizeProp != null){
+			customizeProp.doWithProps(props);
+		}
 		final StandardServiceRegistry registry =
 			new StandardServiceRegistryBuilder()
 				.applySettings(props)
