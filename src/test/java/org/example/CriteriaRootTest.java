@@ -131,7 +131,7 @@ public class CriteriaRootTest {
 	 *         InvoiceLineEntity ile1_0
 	 *             on ole1_0.id=ile1_0.order_line_id
 	 *     order by
-	 *         4 desc // this is wrong
+	 *         4 desc // this is wrong should be oe1_0.name
 	 */
 	private void execute(Session session, List<CriteriaFilterParam> filters) {
 		Map<String, List<CriteriaFilterParam>> filterMap = filters.stream().collect(Collectors.groupingBy(CriteriaFilterParam::getEntityName));
