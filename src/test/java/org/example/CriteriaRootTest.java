@@ -106,11 +106,11 @@ public class CriteriaRootTest {
 	@Test
 	void test() {
 		sessionFactory.inTransaction(session -> {
-			CriteriaFilterParam orderParam = new CriteriaFilterParam(OrderEntity.class.getName(), "name");
 			execute(
 				session,
 				List.of(
-					orderParam
+					new CriteriaFilterParam(OrderLineEntity.class.getName(), "orderId"),
+					new CriteriaFilterParam(OrderEntity.class.getName(), "name")
 				)
 			);
 		});
@@ -131,7 +131,9 @@ public class CriteriaRootTest {
 	 *         InvoiceLineEntity ile1_0
 	 *             on ole1_0.id=ile1_0.order_line_id
 	 *     order by
-	 *         4 desc // this is wrong should be oe1_0.name
+	 *         ole1_0.order_id desc,
+	 *         4 desc
+	 *         // this is wrong 4 should be oe1_0.name
 	 */
 	private void execute(Session session, List<CriteriaFilterParam> filters) {
 		Map<String, List<CriteriaFilterParam>> filterMap = filters.stream().collect(Collectors.groupingBy(CriteriaFilterParam::getEntityName));
@@ -144,6 +146,12 @@ public class CriteriaRootTest {
 		JpaCriteriaQuery<OrderItemVO> criteriaQuery = criteriaBuilder.createQuery(hql, OrderItemVO.class);
 		SqmRoot<OrderLineEntity> root = (SqmRoot<OrderLineEntity>) criteriaQuery.getRootList().iterator().next();
 		List<Order> orderList = new ArrayList<>();
+		List<CriteriaFilterParam> rootFilter = filterMap.getOrDefault(root.getEntityName(), Collections.emptyList());
+		for (CriteriaFilterParam criteriaFilterParam : rootFilter) {
+			if (criteriaFilterParam.getSortProperty() != null) {
+				orderList.add(criteriaBuilder.desc(root.get(criteriaFilterParam.getSortProperty())));
+			}
+		}
 		List<SqmEntityJoin> sqmJoins = ((SqmRoot) root).getSqmJoins();
 		for (SqmEntityJoin sqmJoin : sqmJoins) {
 			List<CriteriaFilterParam> joinFilter = filterMap.getOrDefault(sqmJoin.getEntityName(), Collections.emptyList());
