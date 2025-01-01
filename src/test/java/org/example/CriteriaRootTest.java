@@ -2,6 +2,7 @@ package org.example;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.AllArgsConstructor;
@@ -105,25 +106,34 @@ public class CriteriaRootTest {
 	@Test
 	void test() {
 		sessionFactory.inTransaction(session -> {
-			CriteriaFilterParam orderlineParam = new CriteriaFilterParam(OrderLineEntity.class.getName(), MatchOperator.AND);
-			orderlineParam.addParam(new org.example.CriteriaRootTest.Operator.EqualOperator("orderId", this.orderId));
-			orderlineParam.addParam(new org.example.CriteriaRootTest.Operator.EqualOperator("amount", BigDecimal.TEN));
-			CriteriaFilterParam orderParam = new CriteriaFilterParam(OrderEntity.class.getName(), MatchOperator.AND);
-			orderParam.addParam(new Operator.EqualOperator("name", "my order"));
-			orderParam.addParam(new Operator.EqualOperator("id", randomUUID()));
-			CriteriaFilterParam invoicelineParam = new CriteriaFilterParam(InvoiceLineEntity.class.getName(), MatchOperator.OR);
-			invoicelineParam.addParam(new Operator.EqualOperator("orderLineId", randomUUID()));
+			CriteriaFilterParam orderParam = new CriteriaFilterParam(OrderEntity.class.getName(), "name");
 			execute(
 				session,
 				List.of(
-					orderlineParam, orderParam, invoicelineParam
-				),
-				MatchOperator.AND
+					orderParam
+				)
 			);
 		});
 	}
 
-	private void execute(Session session, List<CriteriaFilterParam> filters, MatchOperator matchOperator) {
+	/**
+	 * select
+	 *         oe1_0.id,
+	 *         ole1_0.id,
+	 *         ole1_0.amount,
+	 *         oe1_0.name
+	 *     from
+	 *         OrderLineEntity ole1_0
+	 *     left join
+	 *         OrderEntity oe1_0
+	 *             on ole1_0.order_id=oe1_0.id
+	 *     left join
+	 *         InvoiceLineEntity ile1_0
+	 *             on ole1_0.id=ile1_0.order_line_id
+	 *     order by
+	 *         4 desc // this is wrong
+	 */
+	private void execute(Session session, List<CriteriaFilterParam> filters) {
 		Map<String, List<CriteriaFilterParam>> filterMap = filters.stream().collect(Collectors.groupingBy(CriteriaFilterParam::getEntityName));
 		HibernateCriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
 		String hql = """
@@ -133,111 +143,31 @@ public class CriteriaRootTest {
 			""";
 		JpaCriteriaQuery<OrderItemVO> criteriaQuery = criteriaBuilder.createQuery(hql, OrderItemVO.class);
 		SqmRoot<OrderLineEntity> root = (SqmRoot<OrderLineEntity>) criteriaQuery.getRootList().iterator().next();
-		List<Predicate> roots = new ArrayList<>();
-		List<CriteriaFilterParam> rootFilter = filterMap.getOrDefault(root.getEntityName(), Collections.emptyList());
-		for (CriteriaFilterParam criteriaFilterParam : rootFilter) {
-			List<Predicate> rootPredicates = new ArrayList<>();
-			for (Operator operator : criteriaFilterParam.params) {
-				switch (operator) {
-					case Operator.EqualOperator eq:
-						rootPredicates.add(criteriaBuilder.equal(root.get(eq.field), eq.value));
-						break;
-					default:
-						throw new IllegalStateException("Unexpected value: " + operator);
-				}
-			}
-			if (criteriaFilterParam.operator == MatchOperator.OR) {
-				roots.add(criteriaBuilder.or(rootPredicates.toArray(new Predicate[rootPredicates.size()])));
-			} else {
-				roots.addAll(rootPredicates);
-			}
-		}
+		List<Order> orderList = new ArrayList<>();
 		List<SqmEntityJoin> sqmJoins = ((SqmRoot) root).getSqmJoins();
-		List<Predicate> joins = new ArrayList<>();
 		for (SqmEntityJoin sqmJoin : sqmJoins) {
 			List<CriteriaFilterParam> joinFilter = filterMap.getOrDefault(sqmJoin.getEntityName(), Collections.emptyList());
 			for (CriteriaFilterParam criteriaFilterParam : joinFilter) {
-				List<Predicate> joinPredicates = new ArrayList<>();
-				for (Operator operator : criteriaFilterParam.params) {
-					switch (operator) {
-						case Operator.EqualOperator eq:
-							joinPredicates.add(criteriaBuilder.equal(sqmJoin.get(eq.field), eq.value));
-							break;
-						default:
-							throw new IllegalStateException("Unexpected value: " + operator);
-					}
-				}
-				if (criteriaFilterParam.operator == MatchOperator.OR) {
-					joins.add(criteriaBuilder.or(joinPredicates.toArray(new Predicate[joinPredicates.size()])));
-				} else {
-					joins.addAll(joinPredicates);
+				if (criteriaFilterParam.getSortProperty() != null) {
+					orderList.add(criteriaBuilder.desc(sqmJoin.get(criteriaFilterParam.getSortProperty())));
 				}
 			}
 		}
-		if (matchOperator == MatchOperator.OR) {
-			criteriaQuery.where(criteriaBuilder.or(
-				criteriaBuilder.and(roots.toArray(new Predicate[roots.size()])),
-				criteriaBuilder.and(joins.toArray(new Predicate[joins.size()]))
-			));
-		} else {
-			criteriaQuery.where(criteriaBuilder.and(roots.toArray(new Predicate[roots.size()])),
-				criteriaBuilder.and(joins.toArray(new Predicate[joins.size()])));
+		if (!orderList.isEmpty()) {
+			criteriaQuery.orderBy(orderList);
 		}
-
-
 		List<OrderItemVO> resultList = session.createQuery(criteriaQuery).getResultList();
-	}
-
-	private void applyFilter(Map<String, List<CriteriaFilterParam>> filterMap, String entityName, Consumer<Operator> operatorConsumer) {
-		List<CriteriaFilterParam> rootFilter = filterMap.getOrDefault(entityName, Collections.emptyList());
-		for (CriteriaFilterParam criteriaFilterParam : rootFilter) {
-			for (Operator param : criteriaFilterParam.params) {
-				operatorConsumer.accept(param);
-			}
-		}
 	}
 
 	public static class CriteriaFilterParam {
 		@Getter private final String entityName;
-		@Getter private MatchOperator operator = MatchOperator.AND;
-		private List<Operator> params = new ArrayList<>();
+		@Getter private final String sortProperty;
 
-		public CriteriaFilterParam(String entityName) {
+		public CriteriaFilterParam(String entityName, String sortProperty) {
 			this.entityName = entityName;
-		}
-
-		public CriteriaFilterParam(String entityName, MatchOperator operator) {
-			this.entityName = entityName;
-			this.operator = operator;
-		}
-
-		public void addParam(Operator param) {
-			params.add(param);
+			this.sortProperty = sortProperty;
 		}
 	}
-
-	public sealed interface Operator {
-		record EqualOperator(String field, Object value) implements Operator {}
-
-		record LikeOperator(String field, Object value) implements Operator {}
-	}
-
-	public enum MatchOperator {
-		AND, OR
-	}
-
-//	@Data
-//	@AllArgsConstructor
-//	public static class CriteriaParam {
-//		private final String field;
-//		private Operator operator;
-//		private Object value;
-//	}
-
-
-//	public enum Operator {
-//		EQ
-//	}
 
 
 	/**
@@ -254,7 +184,7 @@ public class CriteriaRootTest {
 	 * oe2_0.name=?
 	 */
 	@Test
-	void testInvalidQuery() {
+	void testHibernateGenerateInvalidQuery() {
 		sessionFactory.inTransaction(session -> {
 			HibernateCriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
 			String hql = "select item from OrderLineEntity item left join OrderEntity o on item.orderId = o.id";
